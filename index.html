@@ -190,15 +190,23 @@
             },
             class: {
                 title: 'Choisissez votre Classe',
-                segments: [ { label: 'Guerrier ⚔️', color: '#ef4444', power: 10 }, { label: 'Voleur 🤫', color: '#6b7280', power: 7 }, { label: 'Magicien 🧙', color: '#6366f1', power: 8 }, { label: 'Clerc ✨', color: '#f5f5f5', power: 8 }, { label: 'Rôdeur 🏹', color: '#22c55e', power: 7 }, { label: 'Barde 🎶', color: '#ec4899', power: 6 }, { label: 'Paladin 🛡️', color: '#d8b4fe', power: 10 } ]
+                segments: [ 
+                    { label: 'Guerrier ⚔️', color: '#ef4444', power: 10, size: 20 }, 
+                    { label: 'Voleur 🤫', color: '#6b7280', power: 7, size: 18 }, 
+                    { label: 'Magicien 🧙', color: '#6366f1', power: 8, size: 15 }, 
+                    { label: 'Clerc ✨', color: '#f5f5f5', power: 8, size: 15 }, 
+                    { label: 'Rôdeur 🏹', color: '#22c55e', power: 7, size: 12 }, 
+                    { label: 'Barde 🎶', color: '#ec4899', power: 6, size: 10 }, 
+                    { label: 'Paladin 🛡️', color: '#d8b4fe', power: 10, size: 10 } 
+                ]
             },
             alignment: {
                 title: 'Définissez votre Alignement',
-                segments: [ { label: 'Loyal Bon 😊', color: '#fef08a', power: 1 }, { label: 'Neutre Bon 🙂', color: '#a7f3d0', power: 0 }, { label: 'Chaotique Bon 😄', color: '#93c5fd', power: 1 }, { label: 'Loyal Neutre 😐', color: '#d1d5db', power: 0 }, { label: 'Neutre Strict 😑', color: '#6b7280', power: 0 }, { label: 'Chaotique Neutre 😏', color: '#f0abfc', power: 0 }, { label: 'Loyal Mauvais 😠', color: '#b91c1c', power: 1 }, { label: 'Neutre Mauvais 😒', color: '#57534e', power: 1 }, { label: 'Chaotique Mauvais 👿', color: '#1e293b', power: 2 } ]
+                segments: [ { label: 'Loyal Bon 😊', color: '#fef08a', power: 1, size: 15 }, { label: 'Neutre Bon 🙂', color: '#a7f3d0', power: 0, size: 15 }, { label: 'Chaotique Bon 😄', color: '#93c5fd', power: 1, size: 15 }, { label: 'Loyal Neutre 😐', color: '#d1d5db', power: 0, size: 10 }, { label: 'Neutre Strict 😑', color: '#6b7280', power: 0, size: 20 }, { label: 'Chaotique Neutre 😏', color: '#f0abfc', power: 0, size: 15 }, { label: 'Loyal Mauvais 😠', color: '#b91c1c', power: 1, size: 5 }, { label: 'Neutre Mauvais 😒', color: '#57534e', power: 1, size: 4 }, { label: 'Chaotique Mauvais 👿', color: '#1e293b', power: 2, size: 1 } ]
             },
             background: {
                 title: 'Quelle est votre Origine ?',
-                segments: [ { label: 'Acolyte 🙏', color: '#fbbf24', power: 1 }, { label: 'Criminel 🔪', color: '#f87171', power: 2 }, { label: 'Héros du peuple ✊', color: '#4ade80', power: 1 }, { label: 'Noble 👑', color: '#c084fc', power: 0 }, { label: 'Sage 📚', color: '#60a5fa', power: 0 }, { label: 'Soldat 🎖️', color: '#a78bfa', power: 3 }, { label: 'Enfant des rues 🏚️', color: '#f472b6', power: 2 } ]
+                segments: [ { label: 'Acolyte 🙏', color: '#fbbf24', power: 1, size: 20 }, { label: 'Criminel 🔪', color: '#f87171', power: 2, size: 15 }, { label: 'Héros du peuple ✊', color: '#4ade80', power: 1, size: 20 }, { label: 'Noble 👑', color: '#c084fc', power: 0, size: 10 }, { label: 'Sage 📚', color: '#60a5fa', power: 0, size: 15 }, { label: 'Soldat 🎖️', color: '#a78bfa', power: 3, size: 15 }, { label: 'Enfant des rues 🏚️', color: '#f472b6', power: 2, size: 5 } ]
             },
             equipment: {
                 title: 'Choisissez votre Équipement',
@@ -344,78 +352,102 @@
         }
 
         function getSegmentsFor(key) {
-            let segments;
-            switch(key) {
-                case 'class': segments = getClassSegmentsForRace(character.race); break;
-                case 'alignment': segments = getAlignmentSegmentsForCharacter(character.race, character.class); break;
-                case 'background': segments = getBackgroundSegmentsForCharacter(character.race, character.class, character.alignment); break;
-                case 'equipment': segments = getEquipmentSegmentsForCharacter(character.class, character.background); break;
-                case 'hasCompanion': segments = getCompanionChanceSegments(character.race, character.class, character.background); break;
-                case 'companion': segments = getCompanionSegmentsForCharacter(character.race, character.class); break;
-                case 'quirk': segments = getQuirkSegmentsForCharacter(character.alignment, character.background); break;
-                case 'triggerEvent': segments = getTriggerEventSegmentsForCharacter(character.class, character.background); break;
-                default: segments = JSON.parse(JSON.stringify(wheelsData[key].segments));
+            let baseSegments;
+            if (key === 'equipment') {
+                baseSegments = getEquipmentBaseSegments(character.class);
+            } else if (wheelsData[key] && wheelsData[key].segments) {
+                baseSegments = JSON.parse(JSON.stringify(wheelsData[key].segments));
+            } else {
+                return []; // Return empty array if segments don't exist
             }
-            segments.forEach(s => { if(s.size === undefined) s.size = 10; });
-            return segments;
+            
+            let finalSegments;
+        
+            switch(key) {
+                case 'class': 
+                    finalSegments = getModifiedSegments(baseSegments, getClassModifiers(character.race));
+                    break;
+                case 'alignment':
+                    finalSegments = getModifiedSegments(baseSegments, getAlignmentModifiers(character.race, character.class));
+                    break;
+                case 'background':
+                    finalSegments = getModifiedSegments(baseSegments, getBackgroundModifiers(character.class, character.alignment));
+                    break;
+                case 'equipment': 
+                    finalSegments = getModifiedSegments(baseSegments, getEquipmentModifiers(character.background));
+                    break;
+                case 'hasCompanion':
+                    finalSegments = getModifiedSegments(baseSegments, getCompanionChanceModifiers(character.race, character.class, character.background));
+                    break;
+                case 'companion': 
+                    finalSegments = getModifiedSegments(baseSegments, getCompanionModifiers(character.race, character.class));
+                    break;
+                case 'quirk': 
+                    finalSegments = getModifiedSegments(baseSegments, getQuirkModifiers(character.race, character.class, character.alignment, character.background));
+                    break;
+                case 'triggerEvent': 
+                    finalSegments = getModifiedSegments(baseSegments, getTriggerEventModifiers(character.class, character.background));
+                    break;
+                default: 
+                    finalSegments = baseSegments;
+            }
+            return finalSegments;
         }
 
-        function getClassSegmentsForRace(race) {
-            const baseSegments = JSON.parse(JSON.stringify(wheelsData.class.segments));
-            const modifiers = { 'Elfe 🧝': { 'Rôdeur 🏹': 2.0, 'Magicien 🧙': 1.8, 'Guerrier ⚔️': 0.7, 'Paladin 🛡️': 0.8 }, 'Nain 🧔‍♂️': { 'Guerrier ⚔️': 2.2, 'Paladin 🛡️': 2.0, 'Magicien 🧙': 0.4, 'Voleur 🤫': 0.6, 'Barde 🎶': 0.7 }, 'Halfelin 🧑‍🍳': { 'Voleur 🤫': 2.5, 'Barde 🎶': 1.8, 'Guerrier ⚔️': 0.5 }, 'Demi-Orc 👹': { 'Guerrier ⚔️': 2.8, 'Clerc ✨': 0.6, 'Magicien 🧙': 0.4 }, 'Tieffelin 😈': { 'Voleur 🤫': 1.8, 'Magicien 🧙': 1.6, 'Clerc ✨': 0.7, 'Paladin 🛡️': 0.8 }, 'Drakéide 🐉': { 'Paladin 🛡️': 2.2, 'Magicien 🧙': 1.8, 'Voleur 🤫': 0.5 }, };
-            const raceMods = modifiers[race] || {};
-            const BASE_CHANCE = 10;
+        function getModifiedSegments(baseSegments, modifiers) {
             baseSegments.forEach(segment => {
-                const multiplier = raceMods[segment.label] || 1;
-                segment.size = BASE_CHANCE * multiplier;
+                const multiplier = modifiers[segment.label] || 1;
+                segment.size *= multiplier;
             });
             return baseSegments;
         }
 
-        function getAlignmentSegmentsForCharacter(race, className) {
-            const baseSegments = JSON.parse(JSON.stringify(wheelsData.alignment.segments));
-            const BASE_CHANCE = 10;
+        // --- Modifier Functions ---
+
+        function getClassModifiers(race) {
+            const modifiers = { 'Elfe 🧝': { 'Rôdeur 🏹': 2.0, 'Magicien 🧙': 1.8, 'Guerrier ⚔️': 0.7, 'Paladin 🛡️': 0.8 }, 'Nain 🧔‍♂️': { 'Guerrier ⚔️': 2.2, 'Paladin 🛡️': 2.0, 'Magicien 🧙': 0.4, 'Voleur 🤫': 0.6, 'Barde 🎶': 0.7 }, 'Halfelin 🧑‍🍳': { 'Voleur 🤫': 2.5, 'Barde 🎶': 1.8, 'Guerrier ⚔️': 0.5 }, 'Demi-Orc 👹': { 'Guerrier ⚔️': 2.8, 'Clerc ✨': 0.6, 'Magicien 🧙': 0.4 }, 'Tieffelin 😈': { 'Voleur 🤫': 1.8, 'Magicien 🧙': 1.6, 'Clerc ✨': 0.7, 'Paladin 🛡️': 0.8 }, 'Drakéide 🐉': { 'Paladin 🛡️': 2.2, 'Magicien 🧙': 1.8, 'Voleur 🤫': 0.5 } };
+            return modifiers[race] || {};
+        }
+
+        function getAlignmentModifiers(race, className) {
+            const finalMods = {};
             const classMods = { 'Paladin 🛡️': { 'Loyal Bon 😊': 5.0, 'Chaotique Bon 😄': 0.2, 'Loyal Mauvais 😠': 0.1, 'Chaotique Mauvais 👿': 0.1 }, 'Voleur 🤫': { 'Chaotique Neutre 😏': 2.0, 'Chaotique Bon 😄': 1.5, 'Loyal Bon 😊': 0.4 }, 'Barde 🎶': { 'Chaotique Bon 😄': 2.0, 'Chaotique Neutre 😏': 1.8, 'Loyal Bon 😊': 0.5 }, 'Clerc ✨': { 'Loyal Bon 😊': 2.0, 'Neutre Bon 🙂': 1.8, 'Loyal Mauvais 😠': 0.3 }, 'Magicien 🧙': { 'Neutre Strict 😑': 1.5, 'Chaotique Neutre 😏': 1.5, 'Loyal Bon 😊': 0.8 } };
             const raceMods = { 'Elfe 🧝': { 'Chaotique Bon 😄': 1.5, 'Loyal Bon 😊': 0.8 }, 'Nain 🧔‍♂️': { 'Loyal Bon 😊': 1.5, 'Loyal Neutre 😐': 1.5, 'Chaotique Bon 😄': 0.6 }, 'Tieffelin 😈': { 'Chaotique Neutre 😏': 1.8, 'Chaotique Mauvais 👿': 1.5, 'Loyal Bon 😊': 0.3 }, 'Demi-Orc 👹': { 'Chaotique Neutre 😏': 1.8, 'Chaotique Bon 😄': 1.5, 'Loyal Bon 😊': 0.5 } };
-            const currentClassMods = classMods[className] || {};
-            const currentRaceMods = raceMods[race] || {};
-            baseSegments.forEach(segment => {
-                const classMultiplier = currentClassMods[segment.label] || 1;
-                const raceMultiplier = currentRaceMods[segment.label] || 1;
-                segment.size = BASE_CHANCE * classMultiplier * raceMultiplier;
+            const sources = [raceMods[race], classMods[className]];
+            sources.forEach(modSource => {
+                if(modSource) {
+                    for (const key in modSource) {
+                        finalMods[key] = (finalMods[key] || 1) * modSource[key];
+                    }
+                }
             });
-            return baseSegments;
+            return finalMods;
         }
 
-        function getBackgroundSegmentsForCharacter(race, className, alignment) {
-            const baseSegments = JSON.parse(JSON.stringify(wheelsData.background.segments));
-            const BASE_CHANCE = 10;
+        function getBackgroundModifiers(className, alignment) {
+            const finalMods = {};
             const classMods = { 'Paladin 🛡️': { 'Noble 👑': 2.5, 'Soldat 🎖️': 2.0, 'Criminel 🔪': 0.1 }, 'Voleur 🤫': { 'Criminel 🔪': 2.5, 'Enfant des rues 🏚️': 2.5, 'Noble 👑': 0.3, 'Acolyte 🙏': 0.2 }, 'Magicien 🧙': { 'Sage 📚': 3.0, 'Acolyte 🙏': 1.5, 'Soldat 🎖️': 0.5 }, 'Clerc ✨': { 'Acolyte 🙏': 4.0, 'Sage 📚': 1.5, 'Criminel 🔪': 0.2 }, 'Guerrier ⚔️': { 'Soldat 🎖️': 2.5, 'Héros du peuple ✊': 1.5 }, 'Barde 🎶': { 'Héros du peuple ✊': 1.8, 'Enfant des rues 🏚️': 1.5, 'Noble 👑': 1.2 } };
             const alignmentMods = { 'Loyal Bon 😊': { 'Héros du peuple ✊': 1.5, 'Acolyte 🙏': 1.5, 'Criminel 🔪': 0.2 }, 'Chaotique Mauvais 👿': { 'Criminel 🔪': 3.0, 'Enfant des rues 🏚️': 2.0, 'Acolyte 🙏': 0.1, 'Héros du peuple ✊': 0.1 }, 'Chaotique Neutre 😏': { 'Criminel 🔪': 2.0, 'Enfant des rues 🏚️': 1.8, 'Soldat 🎖️': 0.5 }, 'Loyal Neutre 😐': { 'Soldat 🎖️': 2.0, 'Acolyte 🙏': 1.5 } };
-            const currentClassMods = classMods[className] || {};
-            const currentAlignmentMods = alignmentMods[alignment] || {};
-            baseSegments.forEach(segment => {
-                const classMultiplier = currentClassMods[segment.label] || 1;
-                const alignmentMultiplier = currentAlignmentMods[segment.label] || 1;
-                segment.size = BASE_CHANCE * classMultiplier * alignmentMultiplier;
+            const sources = [alignmentMods[alignment], classMods[className]];
+            sources.forEach(modSource => {
+                if(modSource) {
+                    for (const key in modSource) {
+                        finalMods[key] = (finalMods[key] || 1) * modSource[key];
+                    }
+                }
             });
-            return baseSegments;
+            return finalMods;
         }
-
-        function getCompanionChanceSegments(race, className, background) {
-            const baseSegments = JSON.parse(JSON.stringify(wheelsData.hasCompanion.segments));
-            const yesSegment = baseSegments.find(s => s.label === 'Oui 👍');
+        
+        function getCompanionChanceModifiers(race, className, background) {
             const classMods = { 'Rôdeur 🏹': 3.0, 'Magicien 🧙': 1.8, 'Voleur 🤫': 1.3, 'Barde 🎶': 1.2, 'Paladin 🛡️': 0.8, 'Guerrier ⚔️': 0.7 };
-            const raceMods = { 'Elfe 🧝': 1.5, 'Halfelin 🧑‍🍳': 1.2, 'Nain 🧔‍♂️': 0.7, };
-            const backgroundMods = { 'Enfant des rues 🏚️': 1.6, 'Héros du peuple ✊': 1.2, 'Noble 👑': 0.8, 'Soldat 🎖️': 0.6, 'Criminel 🔪': 1.2, };
-            const classMultiplier = classMods[className] || 1;
-            const raceMultiplier = raceMods[race] || 1;
-            const backgroundMultiplier = backgroundMods[background] || 1;
-            yesSegment.size *= classMultiplier * raceMultiplier * backgroundMultiplier;
-            return baseSegments;
+            const raceMods = { 'Elfe 🧝': 1.5, 'Halfelin 🧑‍🍳': 1.2, 'Nain 🧔‍♂️': 0.7 };
+            const backgroundMods = { 'Enfant des rues 🏚️': 1.6, 'Héros du peuple ✊': 1.2, 'Noble 👑': 0.8, 'Soldat 🎖️': 0.6, 'Criminel 🔪': 1.2 };
+            const multiplier = (classMods[className] || 1) * (raceMods[race] || 1) * (backgroundMods[background] || 1);
+            return { 'Oui 👍': multiplier };
         }
-
-        function getEquipmentSegmentsForCharacter(className, background) {
+        
+        function getEquipmentBaseSegments(className) {
             const equipmentData = {
                 'Guerrier ⚔️': [ { label: 'Épée longue et bouclier', power: 2, size: 20, color: '#9ca3af' }, { label: 'Hache à deux mains', power: 3, size: 15, color: '#6b7280' }, { label: 'Arme de guerre fiable', power: 3, size: 5, color: '#f87171' } ],
                 'Voleur 🤫': [ { label: 'Dagues et cape sombre', power: 1, size: 20, color: '#4b5563' }, { label: 'Arbalète de poing', power: 2, size: 10, color: '#6b7280' }, { label: 'Kit de crochetage de qualité', power: 2, size: 5, color: '#f59e0b' } ],
@@ -425,80 +457,71 @@
                 'Barde 🎶': [ { label: 'Luth et rapière', power: 1, size: 20, color: '#f9a8d4' }, { label: 'Flûte et dague', power: 1, size: 15, color: '#f472b6' }, { label: 'Luth de voyage enchanté', power: 2, size: 5, color: '#ec4899' } ],
                 'Paladin 🛡️': [ { label: 'Marteau de guerre et bouclier', power: 2, size: 20, color: '#e9d5ff' }, { label: 'Espadon sacré', power: 3, size: 10, color: '#d8b4fe' }, { label: 'Armure de plates estampée', power: 3, size: 5, color: '#c084fc', rare: true } ]
             };
-            const backgroundModifiers = { 'Soldat 🎖️': { 'Arme de guerre fiable': 4.0 }, 'Criminel 🔪': { 'Kit de crochetage de qualité': 4.0 }, 'Sage 📚': { 'Vieux grimoire (+1 sort)': 4.0 }, 'Acolyte 🙏': { 'Symbole sacré en argent': 4.0 }, 'Noble 👑': { 'Armure de plates estampée': 3.0, 'Luth de voyage enchanté': 2.0 }, 'Enfant des rues 🏚️': { 'Arbalète de poing': 2.0, 'Pièges de chasseur': 2.0} };
-            let segments = JSON.parse(JSON.stringify(equipmentData[className] || equipmentData['Guerrier ⚔️']));
-            const currentBackgroundMods = backgroundModifiers[background] || {};
-            segments.forEach(segment => {
-                const multiplier = currentBackgroundMods[segment.label] || 1;
-                segment.size *= multiplier;
-            });
-            return segments;
-        }
-
-        function getCompanionSegmentsForCharacter(race, className) {
-            const baseSegments = JSON.parse(JSON.stringify(wheelsData.companion.segments));
-            const BASE_CHANCE = 10;
-            const classMods = {
-                'Rôdeur 🏹': { 'Loup apprivoisé 🐺': 3.0, 'Corbeau sarcastique 🐦‍⬛': 1.5 },
-                'Magicien 🧙': { 'Chat mystérieux 🐈‍⬛': 2.0, 'Corbeau sarcastique 🐦‍⬛': 2.0, 'Furet chapardeur': 1.5 },
-                'Paladin 🛡️': { 'Cheval de guerre 🐎': 2.5 },
-                'Nain 🧔‍♂️': { 'Chien loyal 🐕': 1.5 },
-            };
-            const currentClassMods = classMods[className] || {};
-            baseSegments.forEach(segment => {
-                const multiplier = currentClassMods[segment.label] || 1;
-                segment.size = BASE_CHANCE * multiplier;
-            });
-            return baseSegments;
+            return equipmentData[className] || equipmentData['Guerrier ⚔️'];
         }
         
-        function getQuirkSegmentsForCharacter(alignment, background) {
-            const baseSegments = JSON.parse(JSON.stringify(wheelsData.quirk.segments));
-            const BASE_CHANCE = 10;
-            const alignmentMods = {
-                'Chaotique Mauvais 👿': { 'Ne refuse jamais un défi 💪': 2.0, 'Peur des poulets 🐔': 0.5 },
-                'Loyal Bon 😊': { 'Ne sait pas mentir 😇': 2.5, 'Collectionne les cailloux 🪨': 1.5 },
-                'Chaotique Neutre 😏': { 'Voix de barde ivre 🍻': 2.0 }
-            };
-            const backgroundMods = {
-                'Criminel 🔪': { 'Allergique à l\'or 🤧': 1.5, 'Ne sait pas mentir 😇': 0.2 },
-                'Sage 📚': { 'S\'exprime en rimes 📜': 2.0, 'Parle aux objets 🗣️': 1.8 },
-                'Noble 👑': { 'Se croit divin 🙌': 2.0 }
-            };
-            const currentAlignmentMods = alignmentMods[alignment] || {};
-            const currentBackgroundMods = backgroundMods[background] || {};
-            baseSegments.forEach(segment => {
-                const alignmentMultiplier = currentAlignmentMods[segment.label] || 1;
-                const backgroundMultiplier = currentBackgroundMods[segment.label] || 1;
-                segment.size = BASE_CHANCE * alignmentMultiplier * backgroundMultiplier;
-            });
-            return baseSegments;
+        function getEquipmentModifiers(background) {
+            return { 'Soldat 🎖️': { 'Arme de guerre fiable': 4.0 }, 'Criminel 🔪': { 'Kit de crochetage de qualité': 4.0 }, 'Sage 📚': { 'Vieux grimoire (+1 sort)': 4.0 }, 'Acolyte 🙏': { 'Symbole sacré en argent': 4.0 }, 'Noble 👑': { 'Armure de plates estampée': 3.0, 'Luth de voyage enchanté': 2.0 }, 'Enfant des rues 🏚️': { 'Arbalète de poing': 2.0, 'Pièges de chasseur': 2.0} }[background] || {};
         }
 
-        function getTriggerEventSegmentsForCharacter(className, background) {
-             const baseSegments = JSON.parse(JSON.stringify(wheelsData.triggerEvent.segments));
-            const BASE_CHANCE = 10;
-             const classMods = {
-                'Voleur 🤫': { 'Réveil en prison, sans souvenirs ⛓️': 3.0, 'Engagé pour une mission suicide 💰': 2.0 },
-                'Paladin 🛡️': { 'Un dieu vous parle en rêve ✨': 3.0, 'Votre village est attaqué ! 🔥': 1.5 },
-                'Clerc ✨': { 'Un dieu vous parle en rêve ✨': 2.0, 'Un fantôme vous supplie 👻': 1.8 }
-             };
-             const backgroundMods = {
-                'Soldat 🎖️': { 'Votre village est attaqué ! 🔥': 2.5 },
-                'Sage 📚': { 'Une prophétie vous désigne 📜': 3.0 },
-                'Criminel 🔪': { 'Vous trouvez une carte au trésor 🗺️': 2.0, 'Réveil en prison, sans souvenirs ⛓️': 1.8 },
-                'Noble 👑': { 'Engagé pour une mission suicide 💰': 1.5 }
-             };
-            const currentClassMods = classMods[className] || {};
-            const currentBackgroundMods = backgroundMods[background] || {};
-            baseSegments.forEach(segment => {
-                const classMultiplier = currentClassMods[segment.label] || 1;
-                const backgroundMultiplier = currentBackgroundMods[segment.label] || 1;
-                segment.size = BASE_CHANCE * classMultiplier * backgroundMultiplier;
+        function getCompanionModifiers(race, className) {
+            const finalMods = {};
+            const raceMods = {
+                'Elfe 🧝': { 'Loup apprivoisé 🐺': 2.0, 'Corbeau sarcastique 🐦‍⬛': 1.5 },
+                'Halfelin 🧑‍🍳': { 'Chien loyal 🐕': 2.0, 'Furet chapardeur': 1.5 },
+                'Nain 🧔‍♂️': { 'Chien loyal 🐕': 1.5, 'Cheval de guerre 🐎': 0.7 },
+            };
+            const classMods = { 'Rôdeur 🏹': { 'Loup apprivoisé 🐺': 3.0, 'Corbeau sarcastique 🐦‍⬛': 1.5 }, 'Magicien 🧙': { 'Chat mystérieux 🐈‍⬛': 2.0, 'Corbeau sarcastique 🐦‍⬛': 2.0, 'Furet chapardeur': 1.5 }, 'Paladin 🛡️': { 'Cheval de guerre 🐎': 2.5 } };
+            const sources = [raceMods[race], classMods[className]];
+            sources.forEach(modSource => {
+                if(modSource) {
+                    for (const key in modSource) {
+                        finalMods[key] = (finalMods[key] || 1) * modSource[key];
+                    }
+                }
             });
-            return baseSegments;
+            return finalMods;
+        }
+        
+        function getQuirkModifiers(race, className, alignment, background) {
+            const finalMods = {};
+            const raceMods = {
+                'Halfelin 🧑‍🍳': { 'Incroyablement chanceux 🍀': 3.0 }
+            };
+            const classMods = {
+                'Barde 🎶': { 'Voix de barde ivre 🍻': 2.5, 'S\'exprime en rimes 📜': 2.0 },
+                'Magicien 🧙': { 'Parle aux objets 🗣️': 2.0, 'Pense que les animaux lui parlent 🐇': 1.5 },
+                'Guerrier ⚔️': { 'Ne refuse jamais un défi 💪': 1.8 },
+                'Paladin 🛡️': { 'Ne refuse jamais un défi 💪': 1.5, 'Ne sait pas mentir 😇': 1.5 },
+                'Clerc ✨': { 'Se croit divin 🙌': 1.5, 'Ne sait pas mentir 😇': 1.5 },
+            };
+            const alignmentMods = { 'Chaotique Mauvais 👿': { 'Ne refuse jamais un défi 💪': 2.0, 'Peur des poulets 🐔': 0.5 }, 'Loyal Bon 😊': { 'Ne sait pas mentir 😇': 2.5, 'Collectionne les cailloux 🪨': 1.5 }, 'Chaotique Neutre 😏': { 'Voix de barde ivre 🍻': 2.0 } };
+            const backgroundMods = { 'Criminel 🔪': { 'Allergique à l\'or 🤧': 1.5, 'Ne sait pas mentir 😇': 0.2 }, 'Sage 📚': { 'S\'exprime en rimes 📜': 2.0, 'Parle aux objets 🗣️': 1.8 }, 'Noble 👑': { 'Se croit divin 🙌': 2.0 } };
+            const sources = [raceMods[race], classMods[className], alignmentMods[alignment], backgroundMods[background]];
+            sources.forEach(modSource => {
+                if(modSource) {
+                    for (const key in modSource) {
+                        finalMods[key] = (finalMods[key] || 1) * modSource[key];
+                    }
+                }
+            });
+            return finalMods;
         }
 
+        function getTriggerEventModifiers(className, background) {
+            const finalMods = {};
+            const classMods = { 'Voleur 🤫': { 'Réveil en prison, sans souvenirs ⛓️': 3.0, 'Engagé pour une mission suicide 💰': 2.0 }, 'Paladin 🛡️': { 'Un dieu vous parle en rêve ✨': 3.0, 'Votre village est attaqué ! 🔥': 1.5 }, 'Clerc ✨': { 'Un dieu vous parle en rêve ✨': 2.0, 'Un fantôme vous supplie 👻': 1.8 } };
+            const backgroundMods = { 'Soldat 🎖️': { 'Votre village est attaqué ! 🔥': 2.5 }, 'Sage 📚': { 'Une prophétie vous désigne 📜': 3.0 }, 'Criminel 🔪': { 'Vous trouvez une carte au trésor 🗺️': 2.0, 'Réveil en prison, sans souvenirs ⛓️': 1.8 }, 'Noble 👑': { 'Engagé pour une mission suicide 💰': 1.5 } };
+            const sources = [backgroundMods[background], classMods[className]];
+            sources.forEach(modSource => {
+                if(modSource) {
+                    for (const key in modSource) {
+                        finalMods[key] = (finalMods[key] || 1) * modSource[key];
+                    }
+                }
+            });
+            return finalMods;
+        }
 
         function getWinner() {
             const totalSize = currentSegments.reduce((sum, s) => sum + s.size, 0);
@@ -573,8 +596,36 @@
             narrativeSection.classList.remove('hidden');
             setTimeout(() => narrativeSection.classList.remove('opacity-0'), 100);
             spinBtn.textContent = 'Recommencer';
-            spinBtn.onclick = () => { window.location.reload(); };
+            spinBtn.onclick = resetGame;
             spinBtn.disabled = false;
+        }
+
+        function resetGame() {
+            character = { power: 0 };
+            
+            // Reset character sheet UI
+            document.getElementById('char-race').textContent = '...';
+            document.getElementById('char-class').textContent = '...';
+            document.getElementById('char-alignment').textContent = '...';
+            document.getElementById('char-background').textContent = '...';
+            document.getElementById('char-equipment').textContent = '...';
+            document.getElementById('char-companion').textContent = 'Aucun';
+            document.getElementById('char-quirk').textContent = '...';
+            document.getElementById('char-power').textContent = '0';
+
+            // Hide sections
+            const triggerSection = document.getElementById('triggerSection');
+            triggerSection.classList.add('hidden', 'opacity-0');
+            const narrativeSection = document.getElementById('narrativeSection');
+            narrativeSection.classList.add('hidden', 'opacity-0');
+
+            // Reset button
+            spinBtn.textContent = 'Lancer la roue !';
+            spinBtn.onclick = spin;
+
+            // Load first wheel
+            currentWheelKey = 'race';
+            loadWheel(currentWheelKey);
         }
 
         function generateNarrative() {
