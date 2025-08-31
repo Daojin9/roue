@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roue du Destin : Donjons & Dragons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=MedievalSharp&family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c;
+            color: #e2e8f0;
+            overflow-x: hidden;
+        }
+        .font-medieval {
+            font-family: 'MedievalSharp', cursive;
+        }
+        #spinBtn, #copyBtn {
+            transition: all 0.2s ease-in-out;
+        }
+        #spinBtn:hover, #copyBtn:hover {
+            transform: scale(1.05);
+        }
+        #spinBtn:hover {
+            box-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+        }
+        #spinBtn:disabled {
+            background-color: #4a5568;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+        .parchment {
+            background-color: #fdf5e6;
+            color: #5a4429;
+            border: 2px solid #c8b79a;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 2px 2px 8px rgba(0,0,0,0.5);
+            font-family: 'MedievalSharp', cursive;
+        }
+        .parchment h3 {
+             color: #8c4b1d;
+             border-bottom: 2px solid #c8b79a;
+        }
+        .parchment p strong {
+            color: #8c4b1d;
+        }
+        .parchment #char-power {
+            color: #b91c1c;
+        }
+        .parchment #trigger-quest {
+            color: #5a4429;
+        }
+        .parchment #narrative-text {
+            color: #5a4429;
+        }
+        .parchment #copyBtn {
+            background-color: #c8b79a;
+            color: #5a4429;
+            border: 1px solid #a18a6c;
+        }
+        .parchment #copyBtn:hover {
+            background-color: #a18a6c;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            padding-top: 100%; /* Aspect ratio 1:1 */
+        }
+        #wheelCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        .pointer {
+            position: absolute;
+            left: 50%;
+            top: -10px;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 30px solid #fbbf24; /* amber-400 */
+            z-index: 10;
+            filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.5));
+        }
+        
+        /* Confetti styles */
+        #effects-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 999;
+        }
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #fcd34d;
+            opacity: 0;
+            animation: confetti-fall 1.5s ease-out forwards;
+        }
+        @keyframes confetti-fall {
+            0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(50vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="w-full max-w-5xl mx-auto">
+        <header class="text-center mb-6">
+            <h1 class="text-4xl md:text-6xl font-medieval text-amber-400">Roue du Destin</h1>
+            <p class="text-slate-400 text-lg">Créez votre héros et son aventure D&D</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div class="lg:col-span-2 flex flex-col items-center justify-center space-y-4">
+                <h2 id="wheelTitle" class="text-3xl font-bold text-center text-slate-200 transition-opacity duration-500"></h2>
+                <div class="w-full max-w-md md:max-w-lg mx-auto relative">
+                    <div class="pointer"></div>
+                    <div id="effects-container"></div>
+                    <div class="canvas-container">
+                         <canvas id="wheelCanvas"></canvas>
+                    </div>
+                </div>
+                <button id="spinBtn" class="w-full max-w-xs bg-amber-500 hover:bg-amber-600 text-gray-900 font-bold py-3 px-6 rounded-lg text-xl shadow-lg">
+                    Lancer la roue !
+                </button>
+                 <p id="resultText" class="text-center text-2xl font-bold h-8 transition-opacity duration-300"></p>
+            </div>
+
+            <div class="flex flex-col justify-center space-y-4">
+                <div class="parchment">
+                    <h3 class="text-2xl font-medieval pb-2 mb-4">Fiche de Personnage</h3>
+                    <div id="characterSheet" class="space-y-3 text-lg">
+                        <p><strong>Race :</strong> <span id="char-race">...</span></p>
+                        <p><strong>Classe :</strong> <span id="char-class">...</span></p>
+                        <p><strong>Alignement :</strong> <span id="char-alignment">...</span></p>
+                        <p><strong>Origine :</strong> <span id="char-background">...</span></p>
+                        <p><strong>Équipement :</strong> <span id="char-equipment">...</span></p>
+                        <p><strong>Compagnon :</strong> <span id="char-companion">Aucun</span></p>
+                        <p><strong>Trait unique :</strong> <span id="char-quirk">...</span></p>
+                        <div class="pt-2 border-t-2 border-amber-800/20 mt-3">
+                             <p><strong>Puissance de combat :</strong> <span id="char-power" class="font-bold text-xl">0</span></p>
+                        </div>
+                    </div>
+                    <div id="triggerSection" class="mt-6 hidden opacity-0 transition-opacity duration-1000">
+                        <h3 class="text-2xl font-medieval pb-2 mb-4">Événement Déclencheur</h3>
+                        <p id="trigger-quest" class="text-lg"></p>
+                    </div>
+                </div>
+                <div id="narrativeSection" class="parchment hidden opacity-0 transition-opacity duration-1000">
+                    <h3 class="text-2xl font-medieval pb-2 mb-4">Histoire d'Origine</h3>
+                    <p id="narrative-text" class="text-lg italic"></p>
+                    <button id="copyBtn" class="mt-4 w-full font-bold py-2 px-4 rounded-lg text-md">
+                        Copier le Résumé
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const canvas = document.getElementById('wheelCanvas');
+        const ctx = canvas.getContext('2d');
+        const spinBtn = document.getElementById('spinBtn');
+        const wheelTitle = document.getElementById('wheelTitle');
+        const resultText = document.getElementById('resultText');
+        const copyBtn = document.getElementById('copyBtn');
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        const wheelsData = {
+            race: {
+                title: 'Choisissez votre Race',
+                segments: [ { label: 'Humain 🧑', color: '#fca5a5', size: 30, power: 1 }, { label: 'Elfe 🧝', color: '#a7f3d0', size: 18, power: 2 }, { label: 'Nain 🧔‍♂️', color: '#94a3b8', size: 18, power: 2 }, { label: 'Halfelin 🧑‍🍳', color: '#f59e0b', size: 12, power: 1 }, { label: 'Demi-Orc 👹', color: '#16a34a', size: 8, power: 3 }, { label: 'Tieffelin 😈', color: '#e879f9', size: 8, power: 2 }, { label: 'Drakéide 🐉', color: '#b45309', size: 6, power: 3 } ]
+            },
+            class: {
+                title: 'Choisissez votre Classe',
+                segments: [ { label: 'Guerrier ⚔️', color: '#ef4444', power: 10 }, { label: 'Voleur 🤫', color: '#6b7280', power: 7 }, { label: 'Magicien 🧙', color: '#6366f1', power: 8 }, { label: 'Clerc ✨', color: '#f5f5f5', power: 8 }, { label: 'Rôdeur 🏹', color: '#22c55e', power: 7 }, { label: 'Barde 🎶', color: '#ec4899', power: 6 }, { label: 'Paladin 🛡️', color: '#d8b4fe', power: 10 } ]
+            },
+            alignment: {
+                title: 'Définissez votre Alignement',
+                segments: [ { label: 'Loyal Bon 😊', color: '#fef08a', power: 1 }, { label: 'Neutre Bon 🙂', color: '#a7f3d0', power: 0 }, { label: 'Chaotique Bon 😄', color: '#93c5fd', power: 1 }, { label: 'Loyal Neutre 😐', color: '#d1d5db', power: 0 }, { label: 'Neutre Strict 😑', color: '#6b7280', power: 0 }, { label: 'Chaotique Neutre 😏', color: '#f0abfc', power: 0 }, { label: 'Loyal Mauvais 😠', color: '#b91c1c', power: 1 }, { label: 'Neutre Mauvais 😒', color: '#57534e', power: 1 }, { label: 'Chaotique Mauvais 👿', color: '#1e293b', power: 2 } ]
+            },
+            background: {
+                title: 'Quelle est votre Origine ?',
+                segments: [ { label: 'Acolyte 🙏', color: '#fbbf24', power: 1 }, { label: 'Criminel 🔪', color: '#f87171', power: 2 }, { label: 'Héros du peuple ✊', color: '#4ade80', power: 1 }, { label: 'Noble 👑', color: '#c084fc', power: 0 }, { label: 'Sage 📚', color: '#60a5fa', power: 0 }, { label: 'Soldat 🎖️', color: '#a78bfa', power: 3 }, { label: 'Enfant des rues 🏚️', color: '#f472b6', power: 2 } ]
+            },
+            equipment: {
+                title: 'Choisissez votre Équipement',
+            },
+            hasCompanion: {
+                title: 'Avez-vous un compagnon ?',
+                segments: [ { label: 'Non 👎', color: '#94a3b8', size: 75 }, { label: 'Oui 👍', color: '#86efac', size: 25 } ]
+            },
+            companion: {
+                title: 'Quel est votre compagnon ?',
+                segments: [ { label: 'Chien loyal 🐕', color: '#f59e0b', size: 25, power: 1 }, { label: 'Chat mystérieux 🐈‍⬛', color: '#1e293b', size: 20, power: 1 }, { label: 'Furet chapardeur', color: '#a16207', size: 15, power: 0 }, { label: 'Corbeau sarcastique 🐦‍⬛', color: '#4b5563', size: 15, power: 1 }, { label: 'Cheval de guerre 🐎', color: '#78716c', size: 10, power: 2 }, { label: 'Loup apprivoisé 🐺', color: '#6b7280', size: 8, power: 2 }, { label: 'Bébé Griffon 🦅', color: '#fcd34d', size: 2, power: 4, rare: true } ]
+            },
+            quirk: {
+                title: 'Un trait qui vous rend unique',
+                segments: [ { label: 'Parle aux objets 🗣️', color: '#60a5fa', size: 15, power: 0 }, { label: 'Peur des poulets 🐔', color: '#fbbf24', size: 10, power: -2 }, { label: 'Collectionne les cailloux 🪨', color: '#94a3b8', size: 15, power: 0 }, { label: 'Voix de barde ivre 🍻', color: '#4ade80', size: 10, power: -1 }, { label: 'Ne refuse jamais un défi 💪', color: '#f87171', size: 12, power: 1 }, { label: 'Se croit divin 🙌', color: '#c084fc', size: 8, power: -1 }, { label: 'Méfiance des écureuils 🐿️', color: '#f472b6', size: 8, power: -1 }, { label: 'S\'exprime en rimes 📜', color: '#818cf8', size: 10, power: -1 }, { label: 'Allergique à l\'or 🤧', color: '#facc15', size: 5, power: -2 }, { label: 'Incroyablement chanceux 🍀', color: '#34d399', size: 3, power: 3, rare: true }, { label: 'Pense que les animaux lui parlent 🐇', color: '#a3e635', size: 12, power: 0 }, { label: 'Ne sait pas mentir 😇', color: '#2dd4bf', size: 8, power: -1 }, { label: 'S\'endort à des moments inopportuns 😴', color: '#a8a29e', size: 5, power: -2 }, { label: 'Attire les chats errants 🐈', color: '#eab308', size: 12, power: 0 }, { label: 'Peut manger n\'importe quoi 🐐', color: '#84cc16', size: 7, power: 1 } ]
+            },
+            triggerEvent: {
+                title: 'L\'Aventure vous appelle !',
+                segments: [ { label: 'Un fantôme vous supplie 👻', color: '#a78bfa', size: 20 }, { label: 'Votre village est attaqué ! 🔥', color: '#ef4444', size: 15 }, { label: 'Vous trouvez une carte au trésor 🗺️', color: '#f59e0b', size: 25 }, { label: 'Réveil en prison, sans souvenirs ⛓️', color: '#6b7280', size: 10 }, { label: 'Une prophétie vous désigne 📜', color: '#d8b4fe', size: 15 }, { label: 'Engagé pour une mission suicide 💰', color: '#4ade80', size: 10 }, { label: 'Un dieu vous parle en rêve ✨', color: '#fcd34d', size: 4, rare: true } ]
+            }
+        };
+
+        let currentWheelKey = 'race';
+        let currentSegments = [];
+        let currentAngle = 0;
+        let isSpinning = false;
+        let character = { power: 0 };
+        
+        function resizeCanvas() {
+            const container = canvas.parentElement;
+            const size = container.clientWidth;
+            canvas.width = size;
+            canvas.height = size;
+            drawWheel();
+        }
+
+        function drawWheel() {
+            if (!currentSegments || currentSegments.length === 0) return;
+            const totalSize = currentSegments.reduce((sum, s) => sum + (s.size || 1), 0);
+            const radius = canvas.width / 2;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(radius, radius);
+            ctx.rotate(currentAngle);
+            let startAngle = 0;
+            currentSegments.forEach(segment => {
+                const sliceAngle = ((segment.size || 1) / totalSize) * 2 * Math.PI;
+                const endAngle = startAngle + sliceAngle;
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, radius - 5, startAngle, endAngle);
+                ctx.closePath();
+                ctx.fillStyle = segment.color;
+                ctx.fill();
+                ctx.clip();
+                const textAngle = startAngle + sliceAngle / 2;
+                ctx.rotate(textAngle);
+                ctx.rotate(Math.PI);
+                ctx.fillStyle = '#111827';
+                ctx.textAlign = 'left';
+                ctx.textBaseline = 'middle';
+                const maxTextWidth = radius - 30;
+                let fontSize = radius * 0.07;
+                ctx.font = `bold ${fontSize}px Inter`;
+                while (ctx.measureText(segment.label).width > maxTextWidth && fontSize > 8) {
+                    fontSize -= 1;
+                    ctx.font = `bold ${fontSize}px Inter`;
+                }
+                if (sliceAngle > 0.08) {
+                    ctx.fillText(segment.label, -radius + 15, 0);
+                }
+                ctx.restore();
+                ctx.beginPath();
+                ctx.moveTo(0, 0);
+                ctx.arc(0, 0, radius - 5, startAngle, endAngle);
+                ctx.closePath();
+                ctx.strokeStyle = '#2d3748';
+                ctx.lineWidth = 4;
+                ctx.stroke();
+                startAngle = endAngle;
+            });
+            ctx.restore();
+        }
+
+        function playTick() {
+            if (!audioCtx) return;
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            oscillator.type = 'triangle';
+            oscillator.frequency.setValueAtTime(1000, audioCtx.currentTime);
+            oscillator.frequency.exponentialRampToValueAtTime(400, audioCtx.currentTime + 0.08);
+            gainNode.gain.setValueAtTime(0.2, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.00001, audioCtx.currentTime + 0.08);
+            oscillator.start(audioCtx.currentTime);
+            oscillator.stop(audioCtx.currentTime + 0.08);
+        }
+        
+        function spin() {
+            if (isSpinning) return;
+            isSpinning = true;
+            spinBtn.disabled = true;
+            resultText.textContent = '';
+            resultText.classList.add('opacity-0');
+
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
+            const tickAngleIncrement = (2 * Math.PI) / currentSegments.length;
+            let nextTickAngle = currentAngle + tickAngleIncrement;
+            
+            const spinAngleTotal = (Math.random() * 5 + 5) * 2 * Math.PI;
+            const startAngle = currentAngle;
+            const duration = 5000;
+            const start = performance.now();
+
+            function animate(time) {
+                const elapsed = time - start;
+                if (elapsed >= duration) {
+                    currentAngle = (startAngle + spinAngleTotal) % (2 * Math.PI);
+                    drawWheel();
+                    getWinner();
+                    isSpinning = false;
+                    return;
+                }
+                const progress = elapsed / duration;
+                const easeOut = 1 - Math.pow(1 - progress, 4);
+                
+                currentAngle = (startAngle + easeOut * spinAngleTotal);
+
+                if (currentAngle > nextTickAngle) {
+                    playTick();
+                    nextTickAngle += tickAngleIncrement;
+                }
+                
+                drawWheel();
+                requestAnimationFrame(animate);
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function getSegmentsFor(key) {
+            let segments;
+            switch(key) {
+                case 'class': segments = getClassSegmentsForRace(character.race); break;
+                case 'alignment': segments = getAlignmentSegmentsForCharacter(character.race, character.class); break;
+                case 'background': segments = getBackgroundSegmentsForCharacter(character.race, character.class, character.alignment); break;
+                case 'equipment': segments = getEquipmentSegmentsForCharacter(character.class, character.background); break;
+                case 'hasCompanion': segments = getCompanionChanceSegments(character.race, character.class, character.background); break;
+                case 'companion': segments = getCompanionSegmentsForCharacter(character.race, character.class); break;
+                case 'quirk': segments = getQuirkSegmentsForCharacter(character.alignment, character.background); break;
+                case 'triggerEvent': segments = getTriggerEventSegmentsForCharacter(character.class, character.background); break;
+                default: segments = JSON.parse(JSON.stringify(wheelsData[key].segments));
+            }
+            segments.forEach(s => { if(s.size === undefined) s.size = 10; });
+            return segments;
+        }
+
+        function getClassSegmentsForRace(race) {
+            const baseSegments = JSON.parse(JSON.stringify(wheelsData.class.segments));
+            const modifiers = { 'Elfe 🧝': { 'Rôdeur 🏹': 2.0, 'Magicien 🧙': 1.8, 'Guerrier ⚔️': 0.7, 'Paladin 🛡️': 0.8 }, 'Nain 🧔‍♂️': { 'Guerrier ⚔️': 2.2, 'Paladin 🛡️': 2.0, 'Magicien 🧙': 0.4, 'Voleur 🤫': 0.6, 'Barde 🎶': 0.7 }, 'Halfelin 🧑‍🍳': { 'Voleur 🤫': 2.5, 'Barde 🎶': 1.8, 'Guerrier ⚔️': 0.5 }, 'Demi-Orc 👹': { 'Guerrier ⚔️': 2.8, 'Clerc ✨': 0.6, 'Magicien 🧙': 0.4 }, 'Tieffelin 😈': { 'Voleur 🤫': 1.8, 'Magicien 🧙': 1.6, 'Clerc ✨': 0.7, 'Paladin 🛡️': 0.8 }, 'Drakéide 🐉': { 'Paladin 🛡️': 2.2, 'Magicien 🧙': 1.8, 'Voleur 🤫': 0.5 }, };
+            const raceMods = modifiers[race] || {};
+            const BASE_CHANCE = 10;
+            baseSegments.forEach(segment => {
+                const multiplier = raceMods[segment.label] || 1;
+                segment.size = BASE_CHANCE * multiplier;
+            });
+            return baseSegments;
+        }
+
+        function getAlignmentSegmentsForCharacter(race, className) {
+            const baseSegments = JSON.parse(JSON.stringify(wheelsData.alignment.segments));
+            const BASE_CHANCE = 10;
+            const classMods = { 'Paladin 🛡️': { 'Loyal Bon 😊': 5.0, 'Chaotique Bon 😄': 0.2, 'Loyal Mauvais 😠': 0.1, 'Chaotique Mauvais 👿': 0.1 }, 'Voleur 🤫': { 'Chaotique Neutre 😏': 2.0, 'Chaotique Bon 😄': 1.5, 'Loyal Bon 😊': 0.4 }, 'Barde 🎶': { 'Chaotique Bon 😄': 2.0, 'Chaotique Neutre 😏': 1.8, 'Loyal Bon 😊': 0.5 }, 'Clerc ✨': { 'Loyal Bon 😊': 2.0, 'Neutre Bon 🙂': 1.8, 'Loyal Mauvais 😠': 0.3 }, 'Magicien 🧙': { 'Neutre Strict 😑': 1.5, 'Chaotique Neutre 😏': 1.5, 'Loyal Bon 😊': 0.8 } };
+            const raceMods = { 'Elfe 🧝': { 'Chaotique Bon 😄': 1.5, 'Loyal Bon 😊': 0.8 }, 'Nain 🧔‍♂️': { 'Loyal Bon 😊': 1.5, 'Loyal Neutre 😐': 1.5, 'Chaotique Bon 😄': 0.6 }, 'Tieffelin 😈': { 'Chaotique Neutre 😏': 1.8, 'Chaotique Mauvais 👿': 1.5, 'Loyal Bon 😊': 0.3 }, 'Demi-Orc 👹': { 'Chaotique Neutre 😏': 1.8, 'Chaotique Bon 😄': 1.5, 'Loyal Bon 😊': 0.5 } };
+            const currentClassMods = classMods[className] || {};
+            const currentRaceMods = raceMods[race] || {};
+            baseSegments.forEach(segment => {
+                const classMultiplier = currentClassMods[segment.label] || 1;
+                const raceMultiplier = currentRaceMods[segment.label] || 1;
+                segment.size = BASE_CHANCE * classMultiplier * raceMultiplier;
+            });
+            return baseSegments;
+        }
+
+        function getBackgroundSegmentsForCharacter(race, className, alignment) {
+            const baseSegments = JSON.parse(JSON.stringify(wheelsData.background.segments));
+            const BASE_CHANCE = 10;
+            const classMods = { 'Paladin 🛡️': { 'Noble 👑': 2.5, 'Soldat 🎖️': 2.0, 'Criminel 🔪': 0.1 }, 'Voleur 🤫': { 'Criminel 🔪': 2.5, 'Enfant des rues 🏚️': 2.5, 'Noble 👑': 0.3, 'Acolyte 🙏': 0.2 }, 'Magicien 🧙': { 'Sage 📚': 3.0, 'Acolyte 🙏': 1.5, 'Soldat 🎖️': 0.5 }, 'Clerc ✨': { 'Acolyte 🙏': 4.0, 'Sage 📚': 1.5, 'Criminel 🔪': 0.2 }, 'Guerrier ⚔️': { 'Soldat 🎖️': 2.5, 'Héros du peuple ✊': 1.5 }, 'Barde 🎶': { 'Héros du peuple ✊': 1.8, 'Enfant des rues 🏚️': 1.5, 'Noble 👑': 1.2 } };
+            const alignmentMods = { 'Loyal Bon 😊': { 'Héros du peuple ✊': 1.5, 'Acolyte 🙏': 1.5, 'Criminel 🔪': 0.2 }, 'Chaotique Mauvais 👿': { 'Criminel 🔪': 3.0, 'Enfant des rues 🏚️': 2.0, 'Acolyte 🙏': 0.1, 'Héros du peuple ✊': 0.1 }, 'Chaotique Neutre 😏': { 'Criminel 🔪': 2.0, 'Enfant des rues 🏚️': 1.8, 'Soldat 🎖️': 0.5 }, 'Loyal Neutre 😐': { 'Soldat 🎖️': 2.0, 'Acolyte 🙏': 1.5 } };
+            const currentClassMods = classMods[className] || {};
+            const currentAlignmentMods = alignmentMods[alignment] || {};
+            baseSegments.forEach(segment => {
+                const classMultiplier = currentClassMods[segment.label] || 1;
+                const alignmentMultiplier = currentAlignmentMods[segment.label] || 1;
+                segment.size = BASE_CHANCE * classMultiplier * alignmentMultiplier;
+            });
+            return baseSegments;
+        }
+
+        function getCompanionChanceSegments(race, className, background) {
+            const baseSegments = JSON.parse(JSON.stringify(wheelsData.hasCompanion.segments));
+            const yesSegment = baseSegments.find(s => s.label === 'Oui 👍');
+            const classMods = { 'Rôdeur 🏹': 3.0, 'Magicien 🧙': 1.8, 'Voleur 🤫': 1.3, 'Barde 🎶': 1.2, 'Paladin 🛡️': 0.8, 'Guerrier ⚔️': 0.7 };
+            const raceMods = { 'Elfe 🧝': 1.5, 'Halfelin 🧑‍🍳': 1.2, 'Nain 🧔‍♂️': 0.7, };
+            const backgroundMods = { 'Enfant des rues 🏚️': 1.6, 'Héros du peuple ✊': 1.2, 'Noble 👑': 0.8, 'Soldat 🎖️': 0.6, 'Criminel 🔪': 1.2, };
+            const classMultiplier = classMods[className] || 1;
+            const raceMultiplier = raceMods[race] || 1;
+            const backgroundMultiplier = backgroundMods[background] || 1;
+            yesSegment.size *= classMultiplier * raceMultiplier * backgroundMultiplier;
+            return baseSegments;
+        }
+
+        function getEquipmentSegmentsForCharacter(className, background) {
+            const equipmentData = {
+                'Guerrier ⚔️': [ { label: 'Épée longue et bouclier', power: 2, size: 20, color: '#9ca3af' }, { label: 'Hache à deux mains', power: 3, size: 15, color: '#6b7280' }, { label: 'Arme de guerre fiable', power: 3, size: 5, color: '#f87171' } ],
+                'Voleur 🤫': [ { label: 'Dagues et cape sombre', power: 1, size: 20, color: '#4b5563' }, { label: 'Arbalète de poing', power: 2, size: 10, color: '#6b7280' }, { label: 'Kit de crochetage de qualité', power: 2, size: 5, color: '#f59e0b' } ],
+                'Magicien 🧙': [ { label: 'Bâton et grimoire', power: 1, size: 20, color: '#a5b4fc' }, { label: 'Orbe de focalisation', power: 2, size: 10, color: '#818cf8' }, { label: 'Vieux grimoire (+1 sort)', power: 2, size: 5, color: '#6366f1' } ],
+                'Clerc ✨': [ { label: 'Masse et bouclier en bois', power: 1, size: 20, color: '#e5e7eb' }, { label: 'Marteau de guerre léger', power: 2, size: 10, color: '#d1d5db' }, { label: 'Symbole sacré en argent', power: 2, size: 5, color: '#f3f4f6' } ],
+                'Rôdeur 🏹': [ { label: 'Arc long et épée courte', power: 2, size: 20, color: '#86efac' }, { label: 'Deux hachettes', power: 2, size: 10, color: '#4ade80' }, { label: 'Pièges de chasseur', power: 1, size: 10, color: '#22c55e' } ],
+                'Barde 🎶': [ { label: 'Luth et rapière', power: 1, size: 20, color: '#f9a8d4' }, { label: 'Flûte et dague', power: 1, size: 15, color: '#f472b6' }, { label: 'Luth de voyage enchanté', power: 2, size: 5, color: '#ec4899' } ],
+                'Paladin 🛡️': [ { label: 'Marteau de guerre et bouclier', power: 2, size: 20, color: '#e9d5ff' }, { label: 'Espadon sacré', power: 3, size: 10, color: '#d8b4fe' }, { label: 'Armure de plates estampée', power: 3, size: 5, color: '#c084fc', rare: true } ]
+            };
+            const backgroundModifiers = { 'Soldat 🎖️': { 'Arme de guerre fiable': 4.0 }, 'Criminel 🔪': { 'Kit de crochetage de qualité': 4.0 }, 'Sage 📚': { 'Vieux grimoire (+1 sort)': 4.0 }, 'Acolyte 🙏': { 'Symbole sacré en argent': 4.0 }, 'Noble 👑': { 'Armure de plates estampée': 3.0, 'Luth de voyage enchanté': 2.0 }, 'Enfant des rues 🏚️': { 'Arbalète de poing': 2.0, 'Pièges de chasseur': 2.0} };
+            let segments = JSON.parse(JSON.stringify(equipmentData[className] || equipmentData['Guerrier ⚔️']));
+            const currentBackgroundMods = backgroundModifiers[background] || {};
+            segments.forEach(segment => {
+                const multiplier = currentBackgroundMods[segment.label] || 1;
+                segment.size *= multiplier;
+            });
+            return segments;
+        }
+
+        function getCompanionSegmentsForCharacter(race, className) {
+            const baseSegments = JSON.parse(JSON.stringify(wheelsData.companion.segments));
+            const BASE_CHANCE = 10;
+            const classMods = {
+                'Rôdeur 🏹': { 'Loup apprivoisé 🐺': 3.0, 'Corbeau sarcastique 🐦‍⬛': 1.5 },
+                'Magicien 🧙': { 'Chat mystérieux 🐈‍⬛': 2.0, 'Corbeau sarcastique 🐦‍⬛': 2.0, 'Furet chapardeur': 1.5 },
+                'Paladin 🛡️': { 'Cheval de guerre 🐎': 2.5 },
+                'Nain 🧔‍♂️': { 'Chien loyal 🐕': 1.5 },
+            };
+            const currentClassMods = classMods[className] || {};
+            baseSegments.forEach(segment => {
+                const multiplier = currentClassMods[segment.label] || 1;
+                segment.size = BASE_CHANCE * multiplier;
+            });
+            return baseSegments;
+        }
+        
+        function getQuirkSegmentsForCharacter(alignment, background) {
+            const baseSegments = JSON.parse(JSON.stringify(wheelsData.quirk.segments));
+            const BASE_CHANCE = 10;
+            const alignmentMods = {
+                'Chaotique Mauvais 👿': { 'Ne refuse jamais un défi 💪': 2.0, 'Peur des poulets 🐔': 0.5 },
+                'Loyal Bon 😊': { 'Ne sait pas mentir 😇': 2.5, 'Collectionne les cailloux 🪨': 1.5 },
+                'Chaotique Neutre 😏': { 'Voix de barde ivre 🍻': 2.0 }
+            };
+            const backgroundMods = {
+                'Criminel 🔪': { 'Allergique à l\'or 🤧': 1.5, 'Ne sait pas mentir 😇': 0.2 },
+                'Sage 📚': { 'S\'exprime en rimes 📜': 2.0, 'Parle aux objets 🗣️': 1.8 },
+                'Noble 👑': { 'Se croit divin 🙌': 2.0 }
+            };
+            const currentAlignmentMods = alignmentMods[alignment] || {};
+            const currentBackgroundMods = backgroundMods[background] || {};
+            baseSegments.forEach(segment => {
+                const alignmentMultiplier = currentAlignmentMods[segment.label] || 1;
+                const backgroundMultiplier = currentBackgroundMods[segment.label] || 1;
+                segment.size = BASE_CHANCE * alignmentMultiplier * backgroundMultiplier;
+            });
+            return baseSegments;
+        }
+
+        function getTriggerEventSegmentsForCharacter(className, background) {
+             const baseSegments = JSON.parse(JSON.stringify(wheelsData.triggerEvent.segments));
+            const BASE_CHANCE = 10;
+             const classMods = {
+                'Voleur 🤫': { 'Réveil en prison, sans souvenirs ⛓️': 3.0, 'Engagé pour une mission suicide 💰': 2.0 },
+                'Paladin 🛡️': { 'Un dieu vous parle en rêve ✨': 3.0, 'Votre village est attaqué ! 🔥': 1.5 },
+                'Clerc ✨': { 'Un dieu vous parle en rêve ✨': 2.0, 'Un fantôme vous supplie 👻': 1.8 }
+             };
+             const backgroundMods = {
+                'Soldat 🎖️': { 'Votre village est attaqué ! 🔥': 2.5 },
+                'Sage 📚': { 'Une prophétie vous désigne 📜': 3.0 },
+                'Criminel 🔪': { 'Vous trouvez une carte au trésor 🗺️': 2.0, 'Réveil en prison, sans souvenirs ⛓️': 1.8 },
+                'Noble 👑': { 'Engagé pour une mission suicide 💰': 1.5 }
+             };
+            const currentClassMods = classMods[className] || {};
+            const currentBackgroundMods = backgroundMods[background] || {};
+            baseSegments.forEach(segment => {
+                const classMultiplier = currentClassMods[segment.label] || 1;
+                const backgroundMultiplier = currentBackgroundMods[segment.label] || 1;
+                segment.size = BASE_CHANCE * classMultiplier * backgroundMultiplier;
+            });
+            return baseSegments;
+        }
+
+
+        function getWinner() {
+            const totalSize = currentSegments.reduce((sum, s) => sum + s.size, 0);
+            const degrees = currentAngle * 180 / Math.PI;
+            const winningAngle = (360 - degrees + 270) % 360; 
+            let accumulatedAngle = 0;
+            for (const segment of currentSegments) {
+                const sliceAngle = (segment.size / totalSize) * 360;
+                if (winningAngle < accumulatedAngle + sliceAngle) {
+                    updateCharacterSheet(currentWheelKey, segment);
+                    setTimeout(prepareNextWheel, 2000);
+                    return;
+                }
+                accumulatedAngle += sliceAngle;
+            }
+        }
+        
+        function updateCharacterSheet(key, segment) {
+            const value = segment.label;
+            character[key] = value;
+            resultText.textContent = value;
+            resultText.classList.remove('opacity-0');
+
+            if (segment.power !== undefined) {
+                character.power += segment.power;
+                document.getElementById('char-power').textContent = character.power;
+            }
+
+            if(segment.rare) {
+                showConfetti();
+            }
+
+            if (key === 'triggerEvent') {
+                document.getElementById('trigger-quest').textContent = value;
+                const triggerSection = document.getElementById('triggerSection');
+                triggerSection.classList.remove('hidden');
+                setTimeout(() => triggerSection.classList.remove('opacity-0'), 100);
+            } else if (key !== 'hasCompanion') {
+                const element = document.getElementById(`char-${key}`);
+                if (element) {
+                    element.textContent = value;
+                }
+            }
+        }
+
+        function prepareNextWheel() {
+            let nextWheelKey;
+            switch (currentWheelKey) {
+                case 'race': nextWheelKey = 'class'; break;
+                case 'class': nextWheelKey = 'alignment'; break;
+                case 'alignment': nextWheelKey = 'background'; break;
+                case 'background': nextWheelKey = 'equipment'; break;
+                case 'equipment': nextWheelKey = 'hasCompanion'; break;
+                case 'hasCompanion':
+                    nextWheelKey = (character.hasCompanion === 'Oui 👍') ? 'companion' : 'quirk';
+                    break;
+                case 'companion': nextWheelKey = 'quirk'; break;
+                case 'quirk': nextWheelKey = 'triggerEvent'; break;
+                default:
+                    endGame();
+                    return;
+            }
+            currentWheelKey = nextWheelKey;
+            loadWheel(currentWheelKey);
+        }
+
+        function endGame() {
+            wheelTitle.textContent = "Destin Accompli !";
+            const narrativeText = document.getElementById('narrative-text');
+            narrativeText.textContent = generateNarrative();
+            const narrativeSection = document.getElementById('narrativeSection');
+            narrativeSection.classList.remove('hidden');
+            setTimeout(() => narrativeSection.classList.remove('opacity-0'), 100);
+            spinBtn.textContent = 'Recommencer';
+            spinBtn.onclick = () => { window.location.reload(); };
+            spinBtn.disabled = false;
+        }
+
+        function generateNarrative() {
+            const { race, class: className, alignment, background, quirk, companion, equipment, triggerEvent } = character;
+            const stripEmoji = (str) => str ? str.replace(/[\u{1F600}-\u{1F64F}\u{1F300}-\u{1F5FF}\u{1F680}-\u{1F6FF}\u{1F700}-\u{1F77F}\u{1F780}-\u{1F7FF}\u{1F800}-\u{1F8FF}\u{1F900}-\u{1F9FF}\u{1FA00}-\u{1FA6F}\u{1FA70}-\u{1FAFF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, '').trim() : '';
+
+            const r = stripEmoji(race);
+            const c = stripEmoji(className);
+            const a = stripEmoji(alignment).toLowerCase();
+            const b = stripEmoji(background).toLowerCase();
+            const q = stripEmoji(quirk).toLowerCase();
+            const e = stripEmoji(equipment).toLowerCase();
+            const t = stripEmoji(triggerEvent);
+
+            let story = `Issu(e) du peuple des ${r}s, ce(tte) ${c} ${a} a passé ses premières années en tant que ${b}. Armé(e) de son fidèle équipement, un(e) ${e}, il/elle se distingue des autres par son étrange particularité : "${q}". `;
+            if (companion) {
+                const comp = stripEmoji(companion).toLowerCase();
+                story += `Rarement vu(e) sans son fidèle compagnon, un(e) ${comp}, son aventure a véritablement commencé le jour où... ${t}.`;
+            } else {
+                 story += `Solitaire, son aventure a véritablement commencé le jour où... ${t}.`;
+            }
+            return story;
+        }
+
+        function showConfetti() {
+            const container = document.getElementById('effects-container');
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.animationDelay = `${Math.random() * 0.5}s`;
+                confetti.style.backgroundColor = `hsl(${Math.random() * 50 + 40}, 100%, 50%)`;
+                container.appendChild(confetti);
+                setTimeout(() => {
+                    confetti.remove();
+                }, 2000);
+            }
+        }
+
+        function loadWheel(key) {
+            currentSegments = getSegmentsFor(key).sort((a, b) => b.size - a.size);
+            wheelTitle.classList.add('opacity-0');
+            setTimeout(() => {
+                wheelTitle.textContent = wheelsData[key].title;
+                wheelTitle.classList.remove('opacity-0');
+            }, 500);
+            currentAngle = 0;
+            drawWheel();
+            spinBtn.disabled = false;
+        }
+
+        spinBtn.addEventListener('click', spin);
+        copyBtn.addEventListener('click', () => {
+            const { race, class: className, alignment, background, equipment, companion, quirk, power, triggerEvent } = character;
+            const narrative = document.getElementById('narrative-text').textContent;
+            const summary = `--- Fiche de Personnage ---\nRace: ${race}\nClasse: ${className}\nAlignement: ${alignment}\nOrigine: ${background}\nÉquipement: ${equipment}\nCompagnon: ${companion || 'Aucun'}\nTrait unique: ${quirk}\nPuissance: ${power}\n\n--- Histoire ---\n${narrative}`;
+            
+            const textArea = document.createElement("textarea");
+            textArea.value = summary.trim();
+            textArea.style.top = "0";
+            textArea.style.left = "0";
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    copyBtn.textContent = 'Copié !';
+                    setTimeout(() => { copyBtn.textContent = 'Copier le Résumé'; }, 2000);
+                } else {
+                     copyBtn.textContent = 'Erreur';
+                    setTimeout(() => { copyBtn.textContent = 'Copier le Résumé'; }, 2000);
+                }
+            } catch (err) {
+                copyBtn.textContent = 'Erreur';
+                setTimeout(() => { copyBtn.textContent = 'Copier le Résumé'; }, 2000);
+            }
+            document.body.removeChild(textArea);
+        });
+        window.addEventListener('resize', resizeCanvas);
+        
+        loadWheel(currentWheelKey);
+        setTimeout(resizeCanvas, 100);
+    </script>
+</body>
+</html>
+
